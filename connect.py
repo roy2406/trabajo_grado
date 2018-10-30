@@ -8,7 +8,7 @@ USERNAME = 'postgres'
 PASSWORD = 'postgres'
 HOST = 'localhost'
 
-def getTableImportadoraMensual():
+def getTableImportadora():
     # Define our connection string
     conn_string = "host='{}' dbname='{}' user='{}' password='{}'".format(HOST,DBNAME_IMPORTADORA,USERNAME,PASSWORD)
 
@@ -16,39 +16,20 @@ def getTableImportadoraMensual():
     conn = psycopg2.connect(conn_string)
 
     df = pd.read_sql_query("select "
-                   "extract(month from vtw_comprobantes_cabecera.fec_alta) as mes, "
-                   "extract(quarter from vtw_comprobantes_cabecera.fec_alta) as cuatrimestre, "                           
-                   "extract(year from vtw_comprobantes_cabecera.fec_alta) as anho, "
-                   "avg(vtw_comprobantes_detalle.precio_unitario) as precioproducto, "
-                   "sum(vtw_comprobantes_detalle.cantidad) as cantidad "                           
-                   "from vtw_comprobantes_detalle inner join vtw_comprobantes_cabecera "
-                   "on vtw_comprobantes_detalle.id_comprobante_cabecera = vtw_comprobantes_cabecera.id "
-                   "and vtw_comprobantes_detalle.id_articulo = 60069 "
-                   "group by extract(month from vtw_comprobantes_cabecera.fec_alta), "
-                   "extract(year from vtw_comprobantes_cabecera.fec_alta), "
-                   "extract(quarter from vtw_comprobantes_cabecera.fec_alta) "                           
-                   "order by anho, cuatrimestre, mes ", con=conn)
-
-    return df;
-
-def getTableImportadoraTrimestre():
-    # Define our connection string
-    conn_string = "host='{}' dbname='{}' user='{}' password='{}'".format(HOST,DBNAME_IMPORTADORA,USERNAME,PASSWORD)
-
-    # get a connection, if a connect cannot be made an exception will be raised here
-    conn = psycopg2.connect(conn_string)
-
-    df = pd.read_sql_query("select "
-                   "extract(quarter from vtw_comprobantes_cabecera.fec_alta) as cuatrimestre, "                           
-                   "extract(year from vtw_comprobantes_cabecera.fec_alta) as anho, "
-                   "avg(vtw_comprobantes_detalle.precio_unitario) as precioproducto, "    
-                   "sum(vtw_comprobantes_detalle.cantidad) as cantidad "    
-                   "from vtw_comprobantes_detalle inner join vtw_comprobantes_cabecera "
-                   "on vtw_comprobantes_detalle.id_comprobante_cabecera = vtw_comprobantes_cabecera.id "
-                   "and vtw_comprobantes_detalle.id_articulo = 60069 "
-                   "group by extract(year from vtw_comprobantes_cabecera.fec_alta), "
-                   "extract(quarter from vtw_comprobantes_cabecera.fec_alta) "                           
-                   "order by anho, cuatrimestre ", con=conn)
+                            "vtw_comprobantes_cabecera.fec_alta as fecha, "
+                            "extract(month from vtw_comprobantes_cabecera.fec_alta) as mes, "
+                            "extract(quarter from vtw_comprobantes_cabecera.fec_alta) as cuatrimestre, "
+                            "extract(year from vtw_comprobantes_cabecera.fec_alta) as anho, "
+                            "vtw_comprobantes_detalle.precio_unitario as precioproducto, "
+                            "sum(vtw_comprobantes_detalle.cantidad) as cantidad, "
+                            "sum(vtw_comprobantes_detalle.monto_total) as monto_total, "
+                            "vtw_comprobantes_detalle.id_articulo as idproducto "
+                            "from vtw_comprobantes_detalle inner join vtw_comprobantes_cabecera "
+                            "on vtw_comprobantes_detalle.id_comprobante_cabecera = vtw_comprobantes_cabecera.id "
+                            "group by vtw_comprobantes_cabecera.fec_alta, "
+                            "vtw_comprobantes_detalle.id_articulo, "
+                            "vtw_comprobantes_detalle.precio_unitario "
+                            "order by vtw_comprobantes_cabecera.fec_alta asc", con=conn)
 
     return df;
 
