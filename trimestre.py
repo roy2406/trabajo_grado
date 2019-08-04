@@ -1,14 +1,11 @@
 #!/usr/bin/python
 from connect import *
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import TheilSenRegressor
+#from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import BaggingRegressor
-from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import cross_val_score
 import pandas as pd
@@ -41,54 +38,54 @@ def main():
 
     agrupado = agrupado.sort_values(by=['anho', 'cuatrimestre'])
 
-    #correlacion(agrupado)
-
     x = pd.DataFrame(agrupado,columns=['anho','precioproducto_mean','precioproducto_min'])
     y = pd.DataFrame(agrupado,columns=['cantidad_sum'])
 
-    x_train = x[:7]
-    x_test = x[7:]
+    x_train = x[:CV]
+    x_test = x[CV:]
 
-    y_train = y[:7]
-    y_test = y[7:]
+    y_train = y[:CV]
+    y_test = y[CV:]
 
-    cv_lr = np.mean(cross_val_score(LinearRegression(),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
-    cv_tsr = np.mean(cross_val_score(TheilSenRegressor(),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
+    # correlacion(agrupado[:CV])
+
+    #cv_lr = np.mean(cross_val_score(LinearRegression(),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
+    cv_dtr = np.mean(cross_val_score(DecisionTreeRegressor(),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
     cv_gbr = np.mean(cross_val_score(GradientBoostingRegressor(n_estimators=N_ESTIMATORS),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
-    cv_ext = np.mean(cross_val_score(ExtraTreesRegressor(n_estimators=N_ESTIMATORS), x_train, y_train.values.ravel(), cv=CV, scoring='neg_mean_absolute_error'))
+    cv_rfr = np.mean(cross_val_score(RandomForestRegressor(n_estimators=N_ESTIMATORS), x_train, y_train.values.ravel(), cv=CV, scoring='neg_mean_absolute_error'))
     cv_ab = np.mean(cross_val_score(AdaBoostRegressor(n_estimators=N_ESTIMATORS),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
     cv_bag = np.mean(cross_val_score(BaggingRegressor(n_estimators=N_ESTIMATORS),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
-    #cv_mlp = np.mean(cross_val_score(MLPRegressor(),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
 
-    myList = (cv_lr,cv_tsr,cv_gbr,cv_ext,cv_ab,cv_bag)
+    myList = (cv_dtr,cv_gbr,cv_rfr,cv_ab,cv_bag)
+    print(myList)
     x = myList.index(max(myList))
 
-    if(x == 0):
-        regr = LinearRegression().fit(x_train, y_train)
-        print("Linear Regression Mean absolute error: %.2f"
-            % mean_absolute_error(y_test, regr.predict(x_test)))
+    #if(x == 0):
+    #    regr = LinearRegression().fit(x_train, y_train)
+    #    print("Linear Regression Mean absolute error: %.2f"
+    #        % mean_absolute_error(y_test, regr.predict(x_test)))
 
-    elif(x == 1):
-        tsr = TheilSenRegressor().fit(x_train, y_train)
-        print("Theil Sen Regressor Mean absolute error: %.2f"
+    if(x == 0):
+        tsr = DecisionTreeRegressor().fit(x_train, y_train)
+        print("Decision Tree Regressor Mean absolute error: %.2f"
             % mean_absolute_error(y_test, tsr.predict(x_test)))
 
-    elif(x == 2):
+    elif(x == 1):
         gbr = GradientBoostingRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
         print("Gradient Boosting Regressor Mean absolute error: %.2f"
             % mean_absolute_error(y_test, gbr.predict(x_test)))
 
-    elif(x == 3):
-        ext = ExtraTreesRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
-        print("Extra Trees Regressor Mean absolute error: %.2f"
+    elif(x == 2):
+        ext = RandomForestRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
+        print("Random Forest Regressor Mean absolute error: %.2f"
               % mean_absolute_error(y_test, ext.predict(x_test)))
 
-    elif(x == 4):
+    elif(x == 3):
         ab = AdaBoostRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
         print("Ada Boost Regressor Mean absolute error: %.2f"
             % mean_absolute_error(y_test, ab.predict(x_test)))
 
-    elif(x == 5):
+    elif(x == 4):
         bag = BaggingRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
         print("Bagging Regressor Mean absolute error: %.2f"
             % mean_absolute_error(y_test, bag.predict(x_test)))

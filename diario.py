@@ -34,7 +34,7 @@ warnings.filterwarnings("ignore")
 
 def main():
     fecha = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_mensuales '+fecha+'.csv', 'w+') as csvfile:
+    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_diarios '+fecha+'.csv', 'w+') as csvfile:
         spamwriter = csv.writer(csvfile, lineterminator='\n')
         # Lista de los nombres de los algoritmos de regresión a utilizar
         spamwriter.writerow(['AdaBoostRegressor',
@@ -60,7 +60,7 @@ def main():
 
         for id in IDs:
             #Extracción de datos
-            df = getTableVidrieriaMensual(id)
+            df = getTableVidrieriaDiario(id)
 
             columns_all = [x for x in list(df.columns.values) if x!='cantidad']
 
@@ -103,7 +103,7 @@ def main():
                 resultList =  resultList + [resultList[i_best]]
                 spamwriter.writerow(resultList)
 
-    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_mensuales_variables '+fecha+'.csv', 'w+') as csvfile:
+    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_diarios_variables '+fecha+'.csv', 'w+') as csvfile:
         spamwriter = csv.writer(csvfile, lineterminator='\n')
         spamwriter.writerows(variablesUtilizadas)
 
