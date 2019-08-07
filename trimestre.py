@@ -1,94 +1,112 @@
 #!/usr/bin/python
 from connect import *
-#from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostRegressor
-from sklearn.ensemble import BaggingRegressor
-from sklearn.metrics import mean_absolute_error
+
+# from sklearn.ensemble import BaggingRegressor
+# from sklearn.neighbors import KNeighborsRegressor
+# from sklearn.neural_network import MLPRegressor
+# from sklearn.linear_model import BayesianRidge
+# from sklearn.svm import SVR
+# from sklearn.svm import LinearSVR
+# from sklearn.linear_model import LogisticRegression
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MaxAbsScaler
+from sklearn.preprocessing import RobustScaler
+
+from sklearn.feature_selection import RFECV
+from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import KFold
+import sys
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import cross_val_score
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
+import csv
+from datetime import datetime
+import warnings
+warnings.filterwarnings("ignore")
 
-
-N_ESTIMATORS = 100
-CV = 7
-
-def correlacion(df):
-    cols = list(df.columns.values)
-    cm = np.corrcoef(df.values.T)
-    sns.set(font_scale=1.5)
-    hm = sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 15}, yticklabels=cols, xticklabels=cols)
-    plt.show()
 
 def main():
-    df = getTableVidrieria()
-    filtrado = df[(df['idproducto'] == 38)]
-    #print(filtrado.tail(10))
-    agrupado = filtrado.groupby(['cuatrimestre','anho'] ).aggregate(
-        {'precioproducto': {'precioproducto_mean':np.mean, 'precioproducto_max':np.max, 'precioproducto_min':np.min},
-         'cantidad': {'cantidad_sum':np.sum}})
+    fecha = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_trimestre '+fecha+'.csv', 'w+') as csvfile:
+        spamwriter = csv.writer(csvfile, lineterminator='\n')
+        # Lista de los nombres de los algoritmos de regresión a utilizar
 
-    agrupado = agrupado.reset_index(col_level=1)
+        # Lista de las clases de los algoritmos de regresión a utilizar
+        estimators = [AdaBoostRegressor(),
+                      DecisionTreeRegressor(),
+                      RandomForestRegressor(),
+                      GradientBoostingRegressor()]
 
-    agrupado.columns = agrupado.columns.get_level_values(1)
+        normalizadores = [StandardScaler(),
+                        MinMaxScaler(),
+                        MaxAbsScaler(),
+                        RobustScaler()]
 
-    agrupado = agrupado.sort_values(by=['anho', 'cuatrimestre'])
+        # Lista de los nombres de los productos a analizar
+        IDs = [38, 2, 497, 16, 23]
 
-    x = pd.DataFrame(agrupado,columns=['anho','precioproducto_mean','precioproducto_min'])
-    y = pd.DataFrame(agrupado,columns=['cantidad_sum'])
+        variablesUtilizadas = []
+        for (normalizador) in (normalizadores):
+            spamwriter.writerow(['AdaBoostRegressor',
+                                 'DecisionTreeRegressor',
+                                 'RandomForestRegressor',
+                                 'GradientBoostingRegressor',
+                                 'TriggerModel'])
+            for id in IDs:
+                #Extracción de datos
+                df = getTableVidrieriaTrimestral(id)
 
-    x_train = x[:CV]
-    x_test = x[CV:]
+                columns_all = [x for x in list(df.columns.values) if x!='cantidad']
 
-    y_train = y[:CV]
-    y_test = y[CV:]
+                CV = np.ceil(df.shape[0] * 0.75).astype(int)
 
-    # correlacion(agrupado[:CV])
+                y = pd.DataFrame(df, columns=['cantidad'])
+                y_train = y[:CV]
+                y_test = y[CV:]
 
-    #cv_lr = np.mean(cross_val_score(LinearRegression(),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
-    cv_dtr = np.mean(cross_val_score(DecisionTreeRegressor(),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
-    cv_gbr = np.mean(cross_val_score(GradientBoostingRegressor(n_estimators=N_ESTIMATORS),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
-    cv_rfr = np.mean(cross_val_score(RandomForestRegressor(n_estimators=N_ESTIMATORS), x_train, y_train.values.ravel(), cv=CV, scoring='neg_mean_absolute_error'))
-    cv_ab = np.mean(cross_val_score(AdaBoostRegressor(n_estimators=N_ESTIMATORS),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
-    cv_bag = np.mean(cross_val_score(BaggingRegressor(n_estimators=N_ESTIMATORS),x_train,y_train.values.ravel(),cv=CV,scoring='neg_mean_absolute_error'))
+                x_normalizado = pd.DataFrame(normalizador.fit_transform(pd.DataFrame(df, columns=columns_all)), columns=columns_all)
 
-    myList = (cv_dtr,cv_gbr,cv_rfr,cv_ab,cv_bag)
-    print(myList)
-    x = myList.index(max(myList))
+                x_all = x_normalizado[:CV]
 
-    #if(x == 0):
-    #    regr = LinearRegression().fit(x_train, y_train)
-    #    print("Linear Regression Mean absolute error: %.2f"
-    #        % mean_absolute_error(y_test, regr.predict(x_test)))
+                list_result_cv_error = []
+                resultList = []
+                for (estimator) in (estimators):
+                    feature_selector = RFECV(estimator=estimator, cv=LeaveOneOut(), scoring='r2').fit(x_all, y_train).support_
+                    columns_selected = [columns_all[idx] for idx, val in enumerate(feature_selector) if val]
+                    #print(columns_all)
+                    print(columns_selected)
+                    variablesUtilizadas.append(columns_selected)
+                    x = pd.DataFrame(x_normalizado, columns=columns_selected)
+                    x_train = x[:CV]
+                    x_test = x[CV:]
+                    #neg_mean_absolute_error
+                    #neg_mean_squared_error
+                    #r2
+                    cv_result = cross_val_score(estimator, x_train, y_train.values.ravel(), cv=LeaveOneOut(),
+                                                        scoring='r2').mean()
+                    list_result_cv_error.append(cv_result)
 
-    if(x == 0):
-        tsr = DecisionTreeRegressor().fit(x_train, y_train)
-        print("Decision Tree Regressor Mean absolute error: %.2f"
-            % mean_absolute_error(y_test, tsr.predict(x_test)))
+                    #mean_absolute_error
+                    #mean_squared_error
+                    #r2_score
+                    resultList.append(mean_squared_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
 
-    elif(x == 1):
-        gbr = GradientBoostingRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
-        print("Gradient Boosting Regressor Mean absolute error: %.2f"
-            % mean_absolute_error(y_test, gbr.predict(x_test)))
+                i_best = list_result_cv_error.index(max(list_result_cv_error))
+                print(resultList)
+                print(resultList[i_best])
+                resultList =  resultList + [resultList[i_best]]
+                spamwriter.writerow(resultList)
 
-    elif(x == 2):
-        ext = RandomForestRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
-        print("Random Forest Regressor Mean absolute error: %.2f"
-              % mean_absolute_error(y_test, ext.predict(x_test)))
-
-    elif(x == 3):
-        ab = AdaBoostRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
-        print("Ada Boost Regressor Mean absolute error: %.2f"
-            % mean_absolute_error(y_test, ab.predict(x_test)))
-
-    elif(x == 4):
-        bag = BaggingRegressor(n_estimators=N_ESTIMATORS).fit(x_train, y_train)
-        print("Bagging Regressor Mean absolute error: %.2f"
-            % mean_absolute_error(y_test, bag.predict(x_test)))
+    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_trimestre_variables '+fecha+'.csv', 'w+') as csvfile:
+        spamwriter = csv.writer(csvfile, lineterminator='\n')
+        spamwriter.writerows(variablesUtilizadas)
 
 if __name__ == "__main__":
     main()

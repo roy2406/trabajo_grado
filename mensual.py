@@ -37,11 +37,6 @@ def main():
     with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_mensuales '+fecha+'.csv', 'w+') as csvfile:
         spamwriter = csv.writer(csvfile, lineterminator='\n')
         # Lista de los nombres de los algoritmos de regresión a utilizar
-        spamwriter.writerow(['AdaBoostRegressor',
-                             'DecisionTreeRegressor',
-                             'RandomForestRegressor',
-                             'GradientBoostingRegressor',
-                             'TriggerModel'])
 
         # Lista de las clases de los algoritmos de regresión a utilizar
         estimators = [AdaBoostRegressor(),
@@ -56,20 +51,26 @@ def main():
 
         # Lista de los nombres de los productos a analizar
         IDs = [38, 2, 497, 16, 23]
+
         variablesUtilizadas = []
+        for (normalizador) in (normalizadores):
+            spamwriter.writerow(['AdaBoostRegressor',
+                                 'DecisionTreeRegressor',
+                                 'RandomForestRegressor',
+                                 'GradientBoostingRegressor',
+                                 'TriggerModel'])
+            for id in IDs:
+                #Extracción de datos
+                df = getTableVidrieriaMensual(id)
 
-        for id in IDs:
-            #Extracción de datos
-            df = getTableVidrieriaMensual(id)
+                columns_all = [x for x in list(df.columns.values) if x!='cantidad']
 
-            columns_all = [x for x in list(df.columns.values) if x!='cantidad']
+                CV = np.ceil(df.shape[0] * 0.75).astype(int)
 
-            CV = np.ceil(df.shape[0] * 0.75).astype(int)
+                y = pd.DataFrame(df, columns=['cantidad'])
+                y_train = y[:CV]
+                y_test = y[CV:]
 
-            y = pd.DataFrame(df, columns=['cantidad'])
-            y_train = y[:CV]
-            y_test = y[CV:]
-            for (normalizador) in (normalizadores):
                 x_normalizado = pd.DataFrame(normalizador.fit_transform(pd.DataFrame(df, columns=columns_all)), columns=columns_all)
 
                 x_all = x_normalizado[:CV]
@@ -77,7 +78,7 @@ def main():
                 list_result_cv_error = []
                 resultList = []
                 for (estimator) in (estimators):
-                    feature_selector = RFECV(estimator=estimator, cv=LeaveOneOut(), scoring='neg_mean_absolute_error').fit(x_all, y_train).support_
+                    feature_selector = RFECV(estimator=estimator, cv=LeaveOneOut(), scoring='r2').fit(x_all, y_train).support_
                     columns_selected = [columns_all[idx] for idx, val in enumerate(feature_selector) if val]
                     #print(columns_all)
                     print(columns_selected)
@@ -88,14 +89,14 @@ def main():
                     #neg_mean_absolute_error
                     #neg_mean_squared_error
                     #r2
-                    cv_result = np.mean(cross_val_score(estimator, x_train, y_train.values.ravel(), cv=LeaveOneOut(),
-                                                        scoring='neg_mean_absolute_error'))
+                    cv_result = cross_val_score(estimator, x_train, y_train.values.ravel(), cv=LeaveOneOut(),
+                                                        scoring='r2').mean()
                     list_result_cv_error.append(cv_result)
 
                     #mean_absolute_error
                     #mean_squared_error
                     #r2_score
-                    resultList.append(mean_absolute_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
+                    resultList.append(mean_squared_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
 
                 i_best = list_result_cv_error.index(max(list_result_cv_error))
                 print(resultList)
