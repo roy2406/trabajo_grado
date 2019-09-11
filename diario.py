@@ -84,8 +84,8 @@ def main():
 
                     #mean_absolute_error
                     #mean_squared_error
-                    #resultList.append(np.sqrt(mean_squared_error(y_test, estimator.fit(x_train, y_train).predict(x_test))))
-                    resultList.append(mean_absolute_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
+                    resultList.append(np.sqrt(mean_squared_error(y_test, estimator.fit(x_train, y_train).predict(x_test))))
+                    #resultList.append(mean_absolute_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
                     #resultList.append(mean_absolute_percentage_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
 
                 i_best = list_result_cv_error.index(max(list_result_cv_error))
