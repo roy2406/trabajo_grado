@@ -1,27 +1,16 @@
 #!/usr/bin/python
 from connect import *
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.ensemble import AdaBoostRegressor
 
-# from sklearn.ensemble import BaggingRegressor
-# from sklearn.neighbors import KNeighborsRegressor
-# from sklearn.neural_network import MLPRegressor
-# from sklearn.linear_model import BayesianRidge
-# from sklearn.svm import SVR
-# from sklearn.svm import LinearSVR
-# from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import LogisticRegression
 
-from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import MaxAbsScaler
-from sklearn.preprocessing import RobustScaler
 
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import LeaveOneOut
 from sklearn.model_selection import KFold
-import sys
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import cross_val_score
 import pandas as pd
@@ -31,34 +20,34 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
 
+def mean_absolute_percentage_error(y_true, y_pred):
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 def main():
-    fecha = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_diarios '+fecha+'.csv', 'w+') as csvfile:
+    fecha = datetime.today().strftime('%Y-%m-%d %H%M%S')
+    with open('C:\\Users\\ACER\\Desktop\\Tesis\\pruebas\\resultados_diarios '+fecha+'.csv', 'w+') as csvfile:
         spamwriter = csv.writer(csvfile, lineterminator='\n')
-        # Lista de los nombres de los algoritmos de regresión a utilizar
 
         # Lista de las clases de los algoritmos de regresión a utilizar
-        estimators = [AdaBoostRegressor(),
-                      DecisionTreeRegressor(),
-                      RandomForestRegressor(),
-                      GradientBoostingRegressor()]
+        estimators = [Ridge(),
+                      Lasso(),
+                      LogisticRegression(),
+                      LinearRegression()]
 
-        normalizadores = [StandardScaler(),
-                        MinMaxScaler(),
-                        MaxAbsScaler(),
-                        RobustScaler()]
+        estimators_name = []
+        for (estimator) in (estimators):
+            estimators_name.append(type(estimator).__name__)
+        estimators_name.append('TriggerModel')
+
+        normalizadores = [MinMaxScaler()]
 
         # Lista de los nombres de los productos a analizar
         IDs = [38, 2, 497, 16, 23]
 
         variablesUtilizadas = []
         for (normalizador) in (normalizadores):
-            spamwriter.writerow(['AdaBoostRegressor',
-                                 'DecisionTreeRegressor',
-                                 'RandomForestRegressor',
-                                 'GradientBoostingRegressor',
-                                 'TriggerModel'])
+            spamwriter.writerow(estimators_name)
             for id in IDs:
                 #Extracción de datos
                 df = getTableVidrieriaDiario(id)
@@ -95,8 +84,9 @@ def main():
 
                     #mean_absolute_error
                     #mean_squared_error
-                    #r2_score
-                    resultList.append(mean_squared_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
+                    #resultList.append(np.sqrt(mean_squared_error(y_test, estimator.fit(x_train, y_train).predict(x_test))))
+                    resultList.append(mean_absolute_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
+                    #resultList.append(mean_absolute_percentage_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
 
                 i_best = list_result_cv_error.index(max(list_result_cv_error))
                 print(resultList)
@@ -104,7 +94,7 @@ def main():
                 resultList =  resultList + [resultList[i_best]]
                 spamwriter.writerow(resultList)
 
-    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_diarios_variables '+fecha+'.csv', 'w+') as csvfile:
+    with open('C:\\Users\\ACER\\Desktop\\Tesis\\pruebas\\resultados_diarios_variables '+fecha+'.csv', 'w+') as csvfile:
         spamwriter = csv.writer(csvfile, lineterminator='\n')
         spamwriter.writerows(variablesUtilizadas)
 
