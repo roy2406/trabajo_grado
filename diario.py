@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from connect import *
+from aic_bic import aic, bic, check_aic_bic
 
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
@@ -7,6 +8,8 @@ from sklearn.linear_model import Lasso
 from sklearn.linear_model import LogisticRegression
 
 from sklearn.preprocessing import MinMaxScaler
+
+from sklearn.feature_selection import SelectFromModel
 
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import LeaveOneOut
@@ -26,7 +29,7 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 def main():
     fecha = datetime.today().strftime('%Y-%m-%d %H%M%S')
-    with open('C:\\Users\\ACER\\Desktop\\Tesis\\pruebas\\resultados_diarios '+fecha+'.csv', 'w+') as csvfile:
+    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_diarios '+fecha+'.csv', 'w+') as csvfile:
         spamwriter = csv.writer(csvfile, lineterminator='\n')
 
         # Lista de las clases de los algoritmos de regresión a utilizar
@@ -43,12 +46,16 @@ def main():
         normalizadores = [MinMaxScaler()]
 
         # Lista de los nombres de los productos a analizar
-        IDs = [38, 2, 497, 16, 23]
+        IDs = [('ESPEJO_INCOLORO_Optimirror', 38),
+               ('VIDRIO_INCOLORO_(BAJA)', 2),
+               ('LAMINADO_INCOLORO_(Baja)', 497),
+               ('VIDRIO_INCOLORO_(ALTA)', 16),
+               ('VIDRIO_GRIS_(BAJA)', 23)]
 
         variablesUtilizadas = []
         for (normalizador) in (normalizadores):
             spamwriter.writerow(estimators_name)
-            for id in IDs:
+            for nombre, id in IDs:
                 #Extracción de datos
                 df = getTableVidrieriaDiario(id)
 
@@ -69,6 +76,15 @@ def main():
                 for (estimator) in (estimators):
                     feature_selector = RFECV(estimator=estimator, cv=LeaveOneOut(), scoring='r2').fit(x_all, y_train).support_
                     columns_selected = [columns_all[idx] for idx, val in enumerate(feature_selector) if val]
+                    #feature_selector = SelectFromModel(estimator).fit(x_all, y_train).get_support()
+                    #no_hay = True
+                    #for hay in feature_selector:
+                    #    if hay:
+                    #        columns_selected = [columns_all[idx] for idx, val in enumerate(feature_selector) if val]
+                    #        no_hay = False
+                    #        break
+                    #if no_hay:
+                    #    columns_selected = ['precioproducto_max']
                     #print(columns_all)
                     print(columns_selected)
                     variablesUtilizadas.append(columns_selected)
@@ -78,10 +94,11 @@ def main():
                     #neg_mean_absolute_error
                     #neg_mean_squared_error
                     #r2
-                    cv_result = cross_val_score(estimator, x_train, y_train.values.ravel(), cv=LeaveOneOut(),
+                    cv_result = cross_val_score(estimator, x_train, y_train, cv=LeaveOneOut(),
                                                         scoring='r2').mean()
                     list_result_cv_error.append(cv_result)
 
+                    check_aic_bic(x_train, y_train, estimator)
                     #mean_absolute_error
                     #mean_squared_error
                     resultList.append(np.sqrt(mean_squared_error(y_test, estimator.fit(x_train, y_train).predict(x_test))))
@@ -94,7 +111,7 @@ def main():
                 resultList =  resultList + [resultList[i_best]]
                 spamwriter.writerow(resultList)
 
-    with open('C:\\Users\\ACER\\Desktop\\Tesis\\pruebas\\resultados_diarios_variables '+fecha+'.csv', 'w+') as csvfile:
+    with open('/home/rodrigo/Escritorio/Tesis/pruebas/resultados_diarios_variables '+fecha+'.csv', 'w+') as csvfile:
         spamwriter = csv.writer(csvfile, lineterminator='\n')
         spamwriter.writerows(variablesUtilizadas)
 

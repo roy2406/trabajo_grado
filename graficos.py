@@ -39,10 +39,14 @@ def main():
     normalizadores = [MinMaxScaler()]
 
     # Lista de los nombres de los productos a analizar
-    IDs = [38, 2, 497, 16, 23]
+    IDs = [('ESPEJO_INCOLORO_Optimirror', 38),
+           ('VIDRIO_INCOLORO_(BAJA)', 2),
+           ('LAMINADO_INCOLORO_(Baja)', 497),
+           ('VIDRIO_INCOLORO_(ALTA)', 16),
+           ('VIDRIO_GRIS_(BAJA)', 23)]
     variablesUtilizadas = []
     for (normalizador) in (normalizadores):
-        for id in IDs:
+        for nombre, id in IDs:
             #Extracción de datos
             df = getTableVidrieriaDiario(id)
 
@@ -65,7 +69,7 @@ def main():
             for (estimator) in (estimators):
                 feature_selector = RFECV(estimator=estimator, cv=LeaveOneOut(), scoring='r2').fit(x_all, y_train).support_
                 columns_selected = [columns_all[idx] for idx, val in enumerate(feature_selector) if val]
-                print(columns_selected)
+                #print(columns_selected)
                 variablesUtilizadas.append(columns_selected)
                 x = pd.DataFrame(x_normalizado, columns=columns_selected)
                 x_train = x[:CV]
@@ -90,18 +94,21 @@ def main():
 
             i_best = list_result_cv_error.index(max(list_result_cv_error))
             #--------------------------------------------------------------------------------
-            print(x_test_array[i_best].to_numpy())
             plt.clf()
-            plt.scatter(x_test_array[i_best], y_test, color='green', label='Valor Real')
+            #plt.scatter(x_test_array[i_best], y_test, color='green', label='Valor Real')
             #plt.plot(x_test_array[i_best], y_predict_array[i_best], color='k')
-            plt.scatter(x_test_array[i_best], y_predict_array[i_best], color='red', label='Valor Predecido')
-            plt.grid(b=True, which='major', color='#666666', linestyle='-')
-            plt.legend()
-            plt.savefig('C:\\Users\\ACER\\Desktop\\'+str(id)+'.eps', format='eps')
+            #plt.scatter(x_test_array[i_best], y_predict_array[i_best], color='red', label='Valor Predecido')
 
+            plt.scatter(list(range(df.shape[0] - CV)), y_test, color='green', label='Valor Real', marker="o")
+            plt.scatter(list(range(df.shape[0] - CV)), y_predict_array[i_best], color='red', label='Valor Predecido', marker="v")
+            plt.grid(b=True, which='major', color='#666666', linestyle='-')
+            plt.xlabel('tiempo')
+            plt.ylabel('cantidad')
+            plt.legend()
+            plt.savefig('/home/rodrigo/Escritorio/'+nombre+'.eps', format='eps')
+            #plt.savefig('C:\\Users\\ACER\\Desktop\\' + str(id) + '.png')
             #print(resultList)
             #print(resultList[i_best])
-            #resultList =  resultList + [resultList[i_best]]
 
 if __name__ == "__main__":
     main()
