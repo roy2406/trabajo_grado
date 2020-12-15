@@ -29,7 +29,7 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 def main():
     fecha = datetime.today().strftime('%Y-%m-%d %H%M%S')
-    with open('/home/rodrigo/Desktop/Tesis/pruebas/resultados_diarios '+fecha+'.csv', 'w+') as csvfile:
+    with open('/home/rodrigo/Desktop/Tesis/pruebas/resultados_diarios_cantidad '+fecha+'.csv', 'w+') as csvfile:
         spamwriter = csv.writer(csvfile, lineterminator='\n')
 
         # Lista de las clases de los algoritmos de regresión a utilizar
@@ -52,9 +52,7 @@ def main():
                ('VIDRIO_INCOLORO_(ALTA)', 16),
                ('VIDRIO_GRIS_(BAJA)', 23)]
 
-        variablesUtilizadas = []
         for (normalizador) in (normalizadores):
-            spamwriter.writerow(estimators_name)
             for nombre, id in IDs:
                 #Extracción de datos
                 df = getTableVidrieriaDiario(id)
@@ -62,7 +60,6 @@ def main():
                 columns_all = [x for x in list(df.columns.values) if x!='cantidad']
 
                 CV = np.ceil(df.shape[0] * 0.75).astype(int)
-                print('TAMANHO: ',CV)
 
                 y = pd.DataFrame(df, columns=['cantidad'])
                 y_train = y[:CV]
@@ -71,44 +68,28 @@ def main():
                 x_normalizado = pd.DataFrame(normalizador.fit_transform(pd.DataFrame(df, columns=columns_all)), columns=columns_all)
 
                 list_result_cv_error = []
-                resultListMAE = []
-                resultListRMSE = []
-                resultListMAPE = []
+
+                cantidad_resulList= []
                 for (estimator) in (estimators):
                     feature_selector = RFECV(estimator=estimator, cv=30, scoring='r2').fit(x_normalizado[:CV], y_train).support_
                     columns_selected = [columns_all[idx] for idx, val in enumerate(feature_selector) if val]
 
-                    variablesUtilizadas.append(columns_selected)
                     x = pd.DataFrame(x_normalizado, columns=columns_selected)
                     x_train = x[:CV]
                     x_test = x[CV:]
 
-                    cv_result = cross_val_score(estimator, x_train, y_train, cv=30, scoring='r2').mean()
+
+                    cv_result = cross_val_score(estimator, x_train, y_train, cv=30,
+                                                        scoring='r2').mean()
                     list_result_cv_error.append(cv_result)
 
-                    resultListRMSE.append(np.sqrt(mean_squared_error(y_test, estimator.fit(x_train, y_train).predict(x_test))))
-                    resultListMAE.append(mean_absolute_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
-                    resultListMAPE.append(mean_absolute_percentage_error(y_test, estimator.fit(x_train, y_train).predict(x_test)))
+                    cantidad_resulList.append(estimator.fit(x_train, y_train).predict(x_test))
 
                 i_best = list_result_cv_error.index(max(list_result_cv_error))
-                print(resultListRMSE)
-                print(resultListRMSE[i_best])
-                print(resultListMAE)
-                print(resultListMAE[i_best])
-                print(resultListMAPE)
-                print(resultListMAPE[i_best])
-                print('<------------------------------------------------------------------>')
-                spamwriter.writerow(list_result_cv_error + [list_result_cv_error[i_best]])
-                #resultListMAE =  resultListMAE + [resultListMAE[i_best]]
-                spamwriter.writerow(resultListMAE + [resultListMAE[i_best]])
-                #resultListRMSE =  resultListRMSE + [resultListRMSE[i_best]]
-                spamwriter.writerow( resultListRMSE + [resultListRMSE[i_best]])
-                #resultListMAPE =  resultListMAPE + [resultListMAPE[i_best]]
-                spamwriter.writerow(resultListMAPE + [resultListMAPE[i_best]])
 
-    with open('/home/rodrigo/Desktop/Tesis/pruebas/resultados_diarios_variables '+fecha+'.csv', 'w+') as csvfile:
-        spamwriter = csv.writer(csvfile, lineterminator='\n')
-        spamwriter.writerows(variablesUtilizadas)
+                spamwriter.writerow(y_test['cantidad'])
+
+                spamwriter.writerow([np.float64(sublist).item() for sublist in cantidad_resulList[i_best]])
 
 if __name__ == "__main__":
     main()

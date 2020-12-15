@@ -68,7 +68,7 @@ def main():
                 resultList = []
                 stdList = []
                 for (estimator) in (estimators):
-                    feature_selector = RFECV(estimator=estimator, cv=LeaveOneOut(), scoring='r2').fit(x_all, y_train).support_
+                    feature_selector = RFECV(estimator=estimator, cv=10, scoring='r2').fit(x_all, y_train).support_
                     columns_selected = [columns_all[idx] for idx, val in enumerate(feature_selector) if val]
                     #print(columns_all)
                     x = pd.DataFrame(x_normalizado, columns=columns_selected)
@@ -77,13 +77,9 @@ def main():
                     #neg_mean_absolute_error
                     #neg_mean_squared_error
                     #r2
-                    cv_result = cross_val_score(estimator, x_train, y_train, cv=LeaveOneOut(),
+                    cv_result = cross_val_score(estimator, x_train, y_train, cv=10,
                                                         scoring='r2').mean()
                     list_result_cv_error.append(cv_result)
-
-                    with open('/home/rodrigo/Escritorio/error.csv',
-                              'w+') as csvfile:
-                        spamwriter = csv.writer(csvfile, lineterminator='\n')
 
                     #mean_absolute_error
                     #mean_squared_error
@@ -170,7 +166,7 @@ def main():
 
         fig.tight_layout()
 
-        plt.savefig('/home/rodrigo/Escritorio/comparacion.eps', format='eps')
+        plt.savefig('/home/rodrigo/Desktop/Tesis/pruebas/graficos/COMPARACION'+'_'+datetime.today().strftime('%Y-%m-%d %H%M%S')+'.eps', format='eps')
 
 if __name__ == "__main__":
     main()

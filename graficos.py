@@ -67,7 +67,7 @@ def main():
             y_predict_array = []
             x_test_array = []
             for (estimator) in (estimators):
-                feature_selector = RFECV(estimator=estimator, cv=LeaveOneOut(), scoring='r2').fit(x_all, y_train).support_
+                feature_selector = RFECV(estimator=estimator, cv=30, scoring='r2').fit(x_all, y_train).support_
                 columns_selected = [columns_all[idx] for idx, val in enumerate(feature_selector) if val]
                 #print(columns_selected)
                 variablesUtilizadas.append(columns_selected)
@@ -77,13 +77,12 @@ def main():
                 #neg_mean_absolute_error
                 #neg_mean_squared_error
                 #r2
-                cv_result = cross_val_score(estimator, x_train, y_train.values.ravel(), cv=LeaveOneOut(),
+                cv_result = cross_val_score(estimator, x_train, y_train.values.ravel(), cv=30,
                                                     scoring='r2').mean()
                 list_result_cv_error.append(cv_result)
                 # mean_absolute_error
                 # mean_squared_error
                 y_predict = estimator.fit(x_train, y_train).predict(x_test)
-
                 y_predict_array.append(y_predict)
                 x_test_array.append(x_test)
 
@@ -102,10 +101,11 @@ def main():
             plt.scatter(list(range(df.shape[0] - CV)), y_test, color='green', label='Valor Real', marker="o")
             plt.scatter(list(range(df.shape[0] - CV)), y_predict_array[i_best], color='red', label='Valor Predecido', marker="v")
             plt.grid(b=True, which='major', color='#666666', linestyle='-')
-            plt.xlabel('tiempo')
-            plt.ylabel('cantidad')
+            plt.xlabel('tiempo (día)')
+            plt.ylabel('cantidad (unidades)')
             plt.legend()
-            plt.savefig('/home/rodrigo/Escritorio/'+nombre+'.eps', format='eps')
+            #plt.savefig('/home/rodrigo/Desktop/Tesis/pruebas/graficos/'+nombre+'.eps', format='eps')
+            plt.savefig('/home/rodrigo/Desktop/Tesis/pruebas/graficos/'+nombre+'.png', format='png')
             #plt.savefig('C:\\Users\\ACER\\Desktop\\' + str(id) + '.png')
             #print(resultList)
             #print(resultList[i_best])
